@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import base64
-import paramiko
 import os
 import requests
 import json
@@ -34,13 +33,9 @@ class netScaler:
         """Create the NetScaler session using HTTP, passing in the credentials
         to the NSIP"""
         try:
-            self.ns_session = nitro_service(self.cfg['config']['nsip'],
-                                            "HTTP")
-
-            self.ns_session.set_credential(self.cfg['config']['username'],
-                                           self.cfg['config']['password'])
+            self.ns_session = nitro_service(self.cfg['config']['nsip'],"HTTP")
+            self.ns_session.set_credential(self.cfg['config']['username'],self.cfg['config']['password'])
             self.ns_session.timeout = 300
-
             self.ns_session.login()
 
         except nitro_exception as e:
@@ -78,75 +73,6 @@ class netScaler:
                   str(e.errorcode) + ",message=" + e.message)
         except Exception as e:
             print("Exception::message=" + str(e.args))
-
-        return
-
-    def reboot(self, wait=False, savec=False):
-        """Reboot the NetScaler.  Can pass in if you wish to save the config or
-        not.  Defaults to not saving the config.  You can also choose to wait
-        in this function until the netscaler is back up using wait, doing so
-        will re-init the connection through nitro"""
-        try:
-            if savec:
-                self.savec()
-
-            self.ns_session.reboot(False)
-
-        except nitro_exception as e:
-            print("Exception::errorcode=" +
-                  str(e.errorcode) + ",message=" + e.message)
-        except Exception as e:
-            print("Exception::message=" + str(e.args))
-
-        if wait:
-            # if we want to wait lets keep checking the nitro status page for a
-            # 200 OK.  If we get the 200, lets reinit the connection and cont.
-            while True:
-                time.sleep(15)
-                try:
-                    r = requests.get("http://" + self.cfg['config']['nsip'] +
-                                     "/nitro/v1/stat", timeout=15,
-                                     auth=(self.cfg['config']['username'],
-                                           self.cfg['config']['password']))
-                    if r.status_code == 200:
-                        # if were good to go, lets re-init that connection
-                        self.initConnection()
-                        break
-
-                except requests.exceptions.Timeout as e:
-                    print "TO::Waiting on", self.cfg['config']['hostname'], "to reboot..."
-                except requests.exceptions.ConnectionError as e:
-                    print "CE::Waiting on", self.cfg['config']['hostname'], "to reboot..."
-        return
-
-    def defineIPs(self):
-        """Configure a SNIP on the given NetScaler.  Can pass in if you wish to
-         enable management or not, will default to yet. Management enabling
-         will turn on Telnet, SSH, GUI, FTP, and SNMP access."""
-        for ip in self.cfg['config']['ips']:
-            try:
-                #Define the snip
-                newSNIP = nsip()
-                newSNIP.ipaddress = ip['ip']
-                newSNIP.netmask = ip['netmask']
-                newSNIP.type = ip['type']
-
-                #enable management if necessary
-                if ip['mgmt']:
-                    newSNIP.mgmtaccess = "ENABLED"
-                    newSNIP.telnet = "ENABLED"
-                    newSNIP.ssh = "ENABLED"
-                    newSNIP.gui = "ENABLED"
-                    newSNIP.ftp = "ENABLED"
-                    newSNIP.snmp = "ENABLED"
-
-                nsip.add(self.ns_session, newSNIP)
-
-            except nitro_exception as e:
-                print("Exception::errorcode=" +
-                      str(e.errorcode) + ",message=" + e.message)
-            except Exception as e:
-                print("Exception::message=" + str(e.args))
 
         return
 
@@ -189,70 +115,6 @@ class netScaler:
                   str(e.errorcode) + ",message=" + e.message)
         except Exception as e:
             print("Exception::message=" + str(e.args))
-
-        return
-
-    def uploadLicense(self):
-        """Upload the NetScaler License File"""
-        try:
-            """Frist lets upload the license file to /nsconfig/license
-            We will use NITRO's system file to upload the lic as a txt
-            This is due to nitro limitations, if those limitations are dropped
-            We can just use a lic file instead. Due to the limitations
-            We will upload using NITRO and rename using SFTP through the NSIP
-            (We could just upload using SFTP, and it would be faster, but I
-            want to show off how it would be accomplished using NITRO)"""
-
-            # Setting up the upload
-            sf = systemfile()
-            # NITRO checks the incoming file extension,
-            sf.filename = "platform.txt"
-            #							 we use TXT as NITRO supports this
-            sf.filelocation = "/nsconfig/license"
-            sf.fileencoding = "BASE64"
-
-            # Reading in the license file and encoding using base64 for NITRO
-            fin = open(self.cfg['config']['localLicFileLoc'], "r")
-            file_data = fin.read()
-            fin.close()
-            b64_data = base64.b64encode(file_data)
-
-            # Setting the file content to the base64 data
-            sf.filecontent = b64_data
-
-            # Uploading the file
-            systemfile.add(self.ns_session, sf)
-
-        except nitro_exception as e:
-            print("Exception::errorcode=" +
-                  str(e.errorcode) + ",message=" + e.message)
-        except Exception as e:
-            print("Exception::message=" + str(e.args))
-
-        try:
-            # Now we have to rename the txt to lic. Going to use SFTP for this
-            # setting up paramiko client
-            transport = paramiko.Transport((self.cfg['config']['nsip'], 22))
-            transport.connect(username=self.cfg['config']['username'],
-                              password=self.cfg['config']['password'])
-            sftp = paramiko.SFTPClient.from_transport(transport)
-
-            oldLoc = sf.filelocation + "/" + sf.filename
-            newLoc = sf.filelocation + "/" + \
-                os.path.splitext(sf.filename)[0] + ".lic"
-            sftp.rename(oldLoc, newLoc)
-
-            """note: if we wanted to just use FTP we could remove the
-            systemfile code above and use sftp.put(localpath,
-            remotepath, callback=None, confirm=True) paramiko handles file
-            reading and uploading, just call that line..."""
-
-            # Closing SFTP connection
-            sftp.close()
-            transport.close()
-
-        except Exception as e:
-            print("Exception on lic rename::message=" + str(e.args))
 
         return
 
@@ -386,18 +248,14 @@ class netScaler:
                             print("Exception::message=" + str(e.args))
         return
 
-
 def confNS(ns):
     """ This is used to preform the basic configuration of the NetScaler being
     passed in to the function"""
     # Lets get the initial config done and license the box
     ns.initConnection()
-    ns.defineIPs()
     ns.hostNameDnsTz()
-    ns.uploadLicense()
-    ns.reboot(True, True)
 
-    # After a reboot lets configure modes and features
+    # Configure modes and features
     ns.confFeatures()
     ns.confModes()
 
@@ -408,70 +266,6 @@ def confNS(ns):
     # Were done here, lets save and close the connection
     ns.savec()
     ns.closeConnection()
-
-
-def confHA(hanod, jsn):
-    # Configure a NetScaler connection and initiate
-    ns = netScaler({"config": hanod})
-    ns.initConnection()
-
-    if hanod['mode'] == "primary":
-        # If we are primary, update primary, add ALL secondaries
-        newHA = hanode()
-        newHA.hastatus = "STAYPRIMARY"
-
-        try:
-            hanode.update(ns.ns_session, newHA)
-        except nitro_exception as e:
-            print("Exception::errorcode=" + str(e.errorcode) + ",message=" +
-                  e.message)
-        except Exception as e:
-            print("Exception::message=" + str(e.args))
-
-        # Now we need to add all secondaries
-        for secHANode in jsn['hanode']:
-            # Check that the secondary is not the primary and the secondary's
-            # Primary field matches our primary nsip
-            if hanod['nsip'] != secHANode['nsip'] and hanod['nsip'] == secHANode['primary']:
-                newHA = hanode()
-                newHA.id = secHANode['id']
-                newHA.ipaddress = secHANode['nsip']
-
-                try:
-                    hanode.add(ns.ns_session, newHA)
-                except nitro_exception as e:
-                    print("Exception::errorcode=" + str(e.errorcode) +
-                          ",message=" + e.message)
-                except Exception as e:
-                    print("Exception::message=" + str(e.args))
-    else:
-        # Were secondary, update secondary, add primary
-        newHA = hanode()
-        newHA.hastatus = "STAYSECONDARY"
-
-        try:
-            hanode.update(ns.ns_session, newHA)
-        except nitro_exception as e:
-            print("Exception::errorcode=" + str(e.errorcode) +
-                  ",message=" + e.message)
-        except Exception as e:
-            print("Exception::message=" + str(e.args))
-
-        newHA = hanode()
-        newHA.ipaddress = hanod['primary']
-        newHA.id = hanod['id']
-
-        try:
-            newHA.add(ns.ns_session, newHA)
-        except nitro_exception as e:
-            print("Exception::errorcode=" + str(e.errorcode) +
-                  ",message=" + e.message)
-        except Exception as e:
-            print("Exception::message=" + str(e.args))
-
-    ns.savec()
-    ns.closeConnection()
-
 
 if __name__ == '__main__':
     """ This is our main thread of execution, it starts all the work!"""
@@ -503,49 +297,6 @@ if __name__ == '__main__':
     [x.join() for x in threads]
 
     print "All done preforming configuration"
-
-    # Check if we need to configure HA and go for it...
-    if "hanode" in jsn:
-        print "Configuring HA"
-
-        # Lets clear out our previous threads that already ran...
-        del threads[:]
-
-        # Find the primary node
-        for hanod in jsn['hanode']:
-            t = threading.Thread(target=confHA, args=(hanod, jsn))
-            t.daemon = True
-            threads.append(t)
-
-        # Lets start the threads -- If there are many NetScalers, we might
-        # want to slow this part down, rather than run them all at once...
-        [x.start() for x in threads]
-
-        # Lets wait for them to finish
-        [x.join() for x in threads]
-
-        # Now lets go through and set the actual HAStatus...
-        # Since Nitro has no sync state, lets wait a quarter minute to allow
-        # Sync across to initiate
-        time.sleep(15)
-
-        for hanod in jsn['hanode']:
-            ns = netScaler({"config": hanod})
-            ns.initConnection()
-
-            newHA = hanode()
-            newHA.hastatus = hanod['hastatus']
-
-            try:
-                hanode.update(ns.ns_session, newHA)
-            except nitro_exception as e:
-                print("Exception::errorcode=" + str(e.errorcode) +
-                      ",message=" + e.message)
-            except Exception as e:
-                print("Exception::message=" + str(e.args))
-
-            ns.closeConnection()
-
 
 """
 - create connection into NS
