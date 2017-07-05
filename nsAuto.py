@@ -231,7 +231,7 @@ if __name__ == '__main__':
     threads = []
 
     for nscfg in jsn['ns']:
-        print("Configuring NS " + nscfg['config']['hostname'])
+        print("Configuring NS ")
         ns = netScaler(nscfg)
 
         # Create a thread object and add it to our list of threads
