@@ -9,16 +9,11 @@ import threading
 from nssrc.com.citrix.netscaler.nitro.service.nitro_service import nitro_service
 from nssrc.com.citrix.netscaler.nitro.exception.nitro_exception import nitro_exception
 from nssrc.com.citrix.netscaler.nitro.resource.config.ns.nsip import nsip
-from nssrc.com.citrix.netscaler.nitro.resource.config.ns.nshostname import nshostname
-from nssrc.com.citrix.netscaler.nitro.resource.config.dns.dnsnameserver import dnsnameserver
 from nssrc.com.citrix.netscaler.nitro.resource.config.ns.nsconfig import nsconfig
-from nssrc.com.citrix.netscaler.nitro.resource.config.system.systemfile import systemfile
 from nssrc.com.citrix.netscaler.nitro.resource.config.basic.service import service
 from nssrc.com.citrix.netscaler.nitro.resource.config.lb.lbvserver import lbvserver
 from nssrc.com.citrix.netscaler.nitro.resource.config.lb.lbvserver_service_binding import lbvserver_service_binding
 from nssrc.com.citrix.netscaler.nitro.resource.config.cs.csvserver import csvserver
-from nssrc.com.citrix.netscaler.nitro.resource.config.ha.hanode import hanode
-
 
 class netScaler:
     """This class reperesents a connection to a NetScaler using NITRO. Class
@@ -67,48 +62,6 @@ class netScaler:
                 self.savec()
 
             self.ns_session.logout()
-
-        except nitro_exception as e:
-            print("Exception::errorcode=" +
-                  str(e.errorcode) + ",message=" + e.message)
-        except Exception as e:
-            print("Exception::message=" + str(e.args))
-
-        return
-
-    def hostNameDnsTz(self):
-        """Configure the HostName, DNS, and Time Zone for the NetScaler."""
-        # Begin by setting the hostname
-        try:
-            newNsHostname = nshostname()
-            newNsHostname.hostname = self.cfg['config']['hostname']
-            nshostname.update(self.ns_session, newNsHostname)
-
-        except nitro_exception as e:
-            print("Exception::errorcode=" +
-                  str(e.errorcode) + ",message=" + e.message)
-        except Exception as e:
-            print("Exception::message=" + str(e.args))
-
-        # Add DNS Entries, traverse the dns class variable and add the
-        # nameservers
-        for dns in self.cfg['config']['dns']:
-            try:
-                newDNS = dnsnameserver()
-                newDNS.ip = dns['nameserver']
-                dnsnameserver.add(self.ns_session, newDNS)
-
-            except nitro_exception as e:
-                print("Exception::errorcode=" +
-                      str(e.errorcode) + ",message=" + e.message)
-            except Exception as e:
-                print("Exception::message=" + str(e.args))
-
-        # Configure the NetScaler TimeZone
-        try:
-            nsconf = nsconfig()
-            nsconf.timezone = self.cfg['config']['tz']
-            nsconfig.update(self.ns_session, nsconf)
 
         except nitro_exception as e:
             print("Exception::errorcode=" +
@@ -253,7 +206,6 @@ def confNS(ns):
     passed in to the function"""
     # Lets get the initial config done and license the box
     ns.initConnection()
-    ns.hostNameDnsTz()
 
     # Configure modes and features
     ns.confFeatures()
@@ -275,7 +227,7 @@ if __name__ == '__main__':
     fin.close()
     jsn = json.loads(json_raw)
 
-    # Create some threads and netscalers
+    # Create some threads and netscalers if multiple netscaler targets
     threads = []
 
     for nscfg in jsn['ns']:
@@ -298,17 +250,3 @@ if __name__ == '__main__':
 
     print "All done preforming configuration"
 
-"""
-- create connection into NS
-- creating first snip
-- hostname
-- dns
-- TZ
-- licensing
-- reboot
-- HA pair
-- LB Vserver
-* Content switching example
-* SSL
-* enabling basic AppFW?
-"""

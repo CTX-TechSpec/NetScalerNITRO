@@ -3,14 +3,8 @@
     {
       "config": {
         "nsip": "192.168.13.20",
-        "username": "root",
-        "password": "linux",
-        "hostname": "cpx",
-        "dns": [
-          {
-            "nameserver": "8.8.8.8"
-          }
-        ],
+        "username": "nsroot",
+        "password": "nsroot",
         "features": [
           {
             "feature": "lb",
@@ -18,11 +12,11 @@
           },
           {
             "feature": "cs",
-            "enable": true
+            "enable": false
           },
           {
             "feature": "ssl",
-            "enable": true
+            "enable": false
           },
           {
             "feature": "ic",
@@ -30,7 +24,7 @@
           },
           {
             "feature": "rewrite",
-            "enable": true
+            "enable": false
           }
         ],
         "modes": [
@@ -52,7 +46,7 @@
           },
           {
             "mode": "l3",
-            "enable": true
+            "enable": false
           }
         ]
       },
