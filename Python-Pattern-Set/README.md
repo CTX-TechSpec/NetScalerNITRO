@@ -1,15 +1,17 @@
-No guarantees/warranties.
+# No guarantees/warranties.
+
 This all assumes that the customer has installed and set up NITRO properly in their python environment.   This was done using python 2.7.13.
 
 Deleting a pattern set:
-Command line looks like
-python del-patset.py <nsip> <userid> <password> <pattern-set-to-delete>
-Run the command, and the pattern set and all its strings are as good as gone.
-The script does NOT save the running configuration, but there is code in there – commented out.
+
+`python del-patset.py <nsip> <userid> <password> <pattern-set-to-delete>`
+
+Run the command, and the pattern set and all its strings are as good as gone. The script does NOT save the running configuration, but there is code in there – commented out.
 
 Adding a pattern set:
-Command looks like
-python add-patset.py <nsip> <userid> <password> <file-containing-pattern-sets-to-add>
+
+`python add-patset.py <nsip> <userid> <password> <file-containing-pattern-sets-to-add>`
+
 I’ve also included a sample pattern set file to enable addition of one or more.  Note that it is in JSON format (makes it easier to add this way). The opening tag in the file that says “patsets” MUST be there. It MUST. MUST. ☺
 
 Don't mess with format of the file, otherwise it will not load properly.  The thing to watch for are the commas at the ends of each line.   The last pattern in a pattern set should NOT have a comma – all the previous ones do. This JSON parser here can help verify:  
