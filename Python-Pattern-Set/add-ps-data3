@@ -1,0 +1,12 @@
+{"patsets" : {
+          "mla_patset": [ 
+              {"String": "abc", "index": "2", "charset": "ASCII" },
+              {"String": "def", "index": "4", "charset": "ASCII" },
+              {"String": "ghi", "index": "9", "charset": "ASCII" } 
+           ],
+          "rja_patset": [ 
+              {"String": "abc", "index": "", "charset": "ASCII" },
+              {"String": "def", "index": "6", "charset": "ASCII" },
+              {"String": "ghi", "index": "", "charset": "ASCII" } 
+           ]
+}}
